@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 
 import { setMessage } from './store/appReducer';
 
-// import logo from './logo.svg';
+import logo from './logo.svg';
 import './App.css';
 
 
@@ -25,7 +25,7 @@ class App extends Component {
         return (
             <div className="App">
                 <header className="App-header">
-                    <img src="./logo.svg" className="App-logo" alt="logo"/>
+                    <img src={logo} className="App-logo" alt="logo"/>
                     <h1 className="App-title">Welcome to React</h1>
                 </header>
                 <div className="App-intro">

@@ -7,7 +7,6 @@ import { setAsyncMessage } from '../../src/store/appReducer';
 const router = express.Router();
 const path = require("path");
 
-
 const actionIndex = (req, res, next) => {
     const store = configureStore();
 
@@ -17,14 +16,13 @@ const actionIndex = (req, res, next) => {
         });
 };
 
-
 // root (/) should always serve our server rendered page
 router.use('^/$', actionIndex);
 
 // other static resources should just be served as they are
-router.use(express.static(
-    path.resolve(__dirname, '..', '..', 'build'),
-    { maxAge: '30d' },
-));
+// router.use(express.static(
+//     path.resolve(__dirname, '..', '..', 'build'),
+//     { maxAge: '30d' },
+// ));
 
 export default router;

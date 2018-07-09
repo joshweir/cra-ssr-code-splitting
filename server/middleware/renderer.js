@@ -15,13 +15,11 @@ const extractAssets = (assets, chunks) => Object.keys(assets)
 
 
 const path = require("path");
-const fs = require("fs");
-
+// const fs = require("fs");
 
 export default (store) => (req, res, next) => {
     // get the html file created with the create-react-app build
-    const filePath = path.resolve(__dirname, '..', '..', 'build', 'index.html');
-
+    const filePath = path.resolve('build/index.html');
     fs.readFile(filePath, 'utf8', (err, htmlData) => {
         if (err) {
             console.error('err', err);
@@ -34,7 +32,7 @@ export default (store) => (req, res, next) => {
         const html = ReactDOMServer.renderToString(
             <Loadable.Capture report={m => modules.push(m)}>
                 <ReduxProvider store={store}>
-                    <App/>
+                    <App />
                 </ReduxProvider>
             </Loadable.Capture>
         );
@@ -43,8 +41,8 @@ export default (store) => (req, res, next) => {
         const reduxState = JSON.stringify(store.getState());
 
         // map required assets to script tags
-        const extraChunks = extractAssets(manifest, modules)
-            .map(c => `<script type="text/javascript" src="/${c}"></script>`);
+        // const extraChunks = extractAssets(manifest, modules)
+        //    .map(c => `<script type="text/javascript" src="/${c}"></script>`);
 
         // now inject the rendered app into our html and send it to the client
         return res.send(

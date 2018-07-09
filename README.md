@@ -24,3 +24,7 @@ yarn run server
 _But... Why?_ --- The server app is as slim as it can get. It lacks even the most basic security features like XSS and CSRF.
 
 **This is not a boilerplate for a production expressjs server app!!!**
+
+## joshweir notes re attempt to make SSR work
+
+Problem trying to run webpack build inline using memory fs in that it generates chunk names with different hashmap due to using a different entrypoint file. 

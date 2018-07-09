@@ -3,12 +3,31 @@ const path = require('path');
 
 const env = process.env.NODE_ENV === 'development' ? 'dev' : 'prod';
 const craConfig =
-require(`node_modules/react-scripts/config/webpack.config.${env}.js`);
+require(path.resolve(`node_modules/react-scripts/config/webpack.config.${env}.js`));
+
+const isLoader = inLoaders => searchLoader => {
+  let is = false;
+  const loaders = inLoaders instanceof Array ? inLoaders : [inLoaders];
+  let search;
+  if (typeof searchLoader === 'string') {
+    search = searchLoader;
+  } else if (searchLoader.hasOwnProperty('use')) {
+    search = searchLoader.use;
+  } else if (searchLoader.hasOwnProperty('loader')) {
+    search = searchLoader.loader;
+  } else {
+    throw new Error('loader is not a string or an object with "use" ' +
+      'or "loader" property');
+  }
+  loaders.map(loader => {
+    if (search.includes(`/node_modules/${loader}/`)) is = true;
+  })
+  return is;
+};
 
 const makeIncludeEmitFileOptForKnownLoaders =
   knownLoaders => emitFileLoaders => (rule) => {
-    const loader = rule[rule.use ? 'use' : 'loader'];
-    if (emitFileLoaders.includes(loader)) {
+    if (isLoader(emitFileLoaders)(rule)) {
       return {
         ...rule,
         options: {
@@ -16,35 +35,49 @@ const makeIncludeEmitFileOptForKnownLoaders =
           emitFile: false
         }
       };
-    } else if (knownLoaders.includes(loader)) {
+    } else if (isLoader(knownLoaders)(rule)) {
       return rule;
-    } else throw new Error(`Unrecognized loader: ${loader}`);
+    } else throw new Error(`Unrecognized loader for rule: ${JSON.stringify(rule)}`);
   };
 const emitFileLoaders = ['url-loader', 'file-loader'];
-const knownLoaders = ['babel-loader', 'eslint-loader'] + emitFileLoaders;
+const knownLoaders = ['babel-loader', 'eslint-loader'].concat(emitFileLoaders);
 const includeEmitFileOptForKnownLoaders =
   makeIncludeEmitFileOptForKnownLoaders(knownLoaders)(emitFileLoaders);
 
-const preventEmitFile = rule => {
-  // if use property exists, if first element is style-loader
-  // then replace entire use: property with css-loader/locals
-  // else map the array of loaders
-  if (rule.use) {
-    if (rule.use instanceof Array) {
-      const [ firstLoader ] = rule.use;
-      if (firstLoader === 'style-loader') {
-        return {
-          ...rule,
-          use: 'css-loader/locals'
-        }
+const includeServerDirForBabelLoader = rule => {
+  if (isLoader('babel-loader')(rule)) {
+    return {
+      ...rule,
+      include: rule.include instanceof Array
+        ? rule.include.concat(path.resolve(__dirname))
+        : [rule.include, path.resolve(__dirname)]
+    };
+  } else {
+    return rule;
+  }
+};
+
+const preventEmitFileWithLoaderProp = loaderProp => rule => {
+  if (rule[loaderProp] instanceof Array) {
+    const [ firstLoader ] = rule[loaderProp];
+    if (isLoader(['style-loader', 'extract-text-webpack-plugin'])(firstLoader)) {
+      return {
+        ...rule,
+        [loaderProp]: 'css-loader/locals'
       }
     } else {
-      return includeEmitFileOptForKnownLoaders(rule);
+      return rule;
     }
-  // else if loader property exists, update it
+  } else {
+    return includeServerDirForBabelLoader(includeEmitFileOptForKnownLoaders(rule));
+  }
+};
+
+const preventEmitFile = rule => {
+  if (rule.use) {
+    return preventEmitFileWithLoaderProp('use')(rule);
   } else if (rule.loader) {
-    return includeEmitFileOptForKnownLoaders(rule);
-  // else return the rule (even though it should always have a loader)
+    return preventEmitFileWithLoaderProp('loader')(rule);
   } else {
     return rule;
   }
@@ -55,7 +88,7 @@ const updateRulePreventEmitFile = rule => {
   if (rule.oneOf) {
     return {
       ...rule,
-      oneOf: updateRule(rule.OneOf)
+      oneOf: rule.oneOf.map(updateRulePreventEmitFile)
     }
   } else {
     return preventEmitFile(rule)
@@ -66,10 +99,10 @@ const config = {
   ...craConfig,
   target: 'node',
   externals: [nodeExternals()],
-  entry: path.resolve(__dirname, 'index.js'),
+  entry: path.resolve(__dirname, './server.js'),
   output: {
     ...craConfig.output,
-    filename: 'static/js/server.js',
+    filename: 'server.js',
     library: 'app',
     libraryTarget: 'commonjs2'
   },

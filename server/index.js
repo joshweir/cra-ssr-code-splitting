@@ -5,10 +5,11 @@ const path = require('path');
 const requireFromString = require('require-from-string');
 const MemoryFS = require('memory-fs');
 
-import indexController from './controllers/index';
+// import indexController from './controllers/index';
 
 const serverConfig = require('./webpack.config.server.js');
 const fs = new MemoryFS();
+// const fs = require('fs');
 const outputErrors = (err, stats) => {
     if (err) {
          console.error(err.stack || err);
@@ -39,16 +40,20 @@ serverCompiler.run((err, stats) => {
 
     // wants to do this:
     // these 2 lines are new...
-    // const contents = fs.readFileSync(path.resolve(serverConfig.output.path, serverConfig.output.filename), 'utf8');
-    // const reactApp = requireFromString(contents, serverConfig.output.filename);
-    // app.get('*', reactApp.default);
+    const contents =
+      fs.readFileSync(
+        path.resolve(serverConfig.output.path, serverConfig.output.filename),
+        'utf8'
+      );
+    const reactApp = requireFromString(contents, serverConfig.output.filename);
+    app.get('*', reactApp.default);
     // do the above and comment out below,
     // just get it working, create a different file
     // and then incorporate into that new file, the additional
     // store, redux stuff from controllers/index.js and renderer.js
 
     // was using this..
-    app.use(indexController);
+    // app.use(indexController);
 
     // start the app
     Loadable.preloadAll().then(() => {
